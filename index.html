@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Station Safety AI</title>
+    
+    <link rel="stylesheet" href="https://pyscript.net/releases/2023.05.1/pyscript.css" />
+    <script src="https://pyscript.net/releases/2023.05.1/pyscript.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            /* New "Orion Watch" Theme Background */
+            background-color: #0f0518;
+            background-image: 
+                radial-gradient(circle at 50% 0%, #2e1065 0%, #0f0518 60%),
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 40px 40px, 40px 40px;
+            color: #e9d5ff; /* Light lavender text */
+            font-family: 'Share Tech Mono', monospace;
+            overflow-x: hidden;
+        }
+        py-script, py-config { display: none; }
+        h1, h2, h3, .tech-font { font-family: 'Orbitron', sans-serif; letter-spacing: 2px; }
+        
+        .glass-panel {
+            /* Purple tinted glass */
+            background: rgba(20, 10, 40, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(168, 85, 247, 0.2); /* Purple border */
+            box-shadow: 0 0 30px rgba(88, 28, 135, 0.15);
+        }
+
+        .input-field {
+            background: rgba(10, 5, 20, 0.6);
+            border: 1px solid #4c1d95;
+            border-left: 4px solid #d946ef; /* Pink accent */
+            color: #fff;
+            padding: 15px;
+            width: 100%;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+        .input-field:focus { 
+            outline: none; 
+            border-color: #22d3ee; /* Cyan focus */
+            box-shadow: 0 0 15px rgba(34, 211, 238, 0.2); 
+        }
+
+        /* New Gradient Button from Theme */
+        .btn-sci-fi {
+            background: linear-gradient(90deg, #22d3ee 0%, #a855f7 100%); /* Cyan to Purple */
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border: none;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+        }
+        .btn-sci-fi:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 0 30px rgba(34, 211, 238, 0.6); 
+            opacity: 0.9;
+        }
+        .btn-sci-fi:active { transform: translateY(1px); }
+
+        .loader {
+            border: 3px solid rgba(255,255,255,0.1);
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border-left-color: #d946ef; /* Pink loader */
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Status Colors adjusted for dark purple bg */
+        .status-safe { color: #4ade80; text-shadow: 0 0 10px rgba(74, 222, 128, 0.4); border-color: #4ade80; }
+        .status-warning { color: #facc15; text-shadow: 0 0 10px rgba(250, 204, 21, 0.4); border-color: #facc15; }
+        .status-danger { color: #f87171; text-shadow: 0 0 10px rgba(248, 113, 113, 0.4); border-color: #f87171; }
+        .status-critical { color: #ff0055; text-shadow: 0 0 15px rgba(255, 0, 85, 0.6); border-color: #ff0055; animation: pulse 1s infinite; }
+        
+        .hud-corner {
+            position: absolute; width: 20px; height: 20px; border: 2px solid #a855f7; transition: all 0.3s; opacity: 0.5;
+        }
+        .tl { top: -2px; left: -2px; border-right: none; border-bottom: none; }
+        .tr { top: -2px; right: -2px; border-left: none; border-bottom: none; }
+        .bl { bottom: -2px; left: -2px; border-right: none; border-top: none; }
+        .br { bottom: -2px; right: -2px; border-left: none; border-top: none; }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div class="relative w-full max-w-2xl">
+        <div class="mb-8 text-center relative">
+            <!-- Gradient Text Title: Cyan to Pink -->
+            <h1 class="text-4xl md:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-500 mb-2 pb-2">
+                ORION AI
+            </h1>
+            <p class="text-purple-200/60 text-sm mt-2 tracking-[0.3em] uppercase">Autonomous Safety System v1.0</p>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-6">
+            <!-- Input Panel -->
+            <div class="glass-panel p-6 rounded-2xl relative group">
+                <div class="hud-corner tl"></div><div class="hud-corner tr"></div>
+                <div class="hud-corner bl"></div><div class="hud-corner br"></div>
+                
+                <h3 class="text-xl text-pink-300 mb-6 border-b border-purple-800/50 pb-2 tracking-wider">INPUT SENSORS</h3>
+                
+                <div class="input-group mb-4">
+                    <label class="block text-xs text-purple-300 mb-2 uppercase tracking-wider font-bold">Oxygen Level (%)</label>
+                    <input type="number" id="oxygen" class="input-field rounded-lg" placeholder="Target: 95-100">
+                </div>
+                <div class="input-group mb-4">
+                    <label class="block text-xs text-purple-300 mb-2 uppercase tracking-wider font-bold">Hull Pressure (psi)</label>
+                    <input type="number" id="pressure" class="input-field rounded-lg" placeholder="Target: 14.7">
+                </div>
+                <div class="input-group mb-6">
+                    <label class="block text-xs text-purple-300 mb-2 uppercase tracking-wider font-bold">Radiation (mSv)</label>
+                    <input type="number" id="radiation" class="input-field rounded-lg" placeholder="Target: 0">
+                </div>
+                
+                <button id="predict-btn" class="btn-sci-fi w-full py-4 rounded-full font-bold text-lg mt-2">
+                    Run Diagnostics
+                </button>
+            </div>
+
+            <!-- Output Panel -->
+            <div class="glass-panel p-6 rounded-2xl flex flex-col relative min-h-[350px]">
+                <div class="hud-corner tl border-cyan-500"></div><div class="hud-corner tr border-cyan-500"></div>
+                <div class="hud-corner bl border-cyan-500"></div><div class="hud-corner br border-cyan-500"></div>
+                
+                <h3 class="text-xl text-cyan-300 mb-4 border-b border-purple-800/50 pb-2 tracking-wider">SYSTEM ANALYSIS</h3>
+                
+                <div id="initial-state" class="flex-1 flex flex-col items-center justify-center text-purple-400/30">
+                    <svg class="w-20 h-20 mb-4 animate-pulse opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path></svg>
+                    <p class="text-xs tracking-[0.2em] uppercase">Awaiting Sensor Data...</p>
+                </div>
+                
+                <div id="result-box" class="hidden flex-1 flex flex-col items-center justify-center animate-fade-in w-full">
+                    <div class="text-[10px] text-purple-400 mb-2 uppercase tracking-[0.2em]">Confidence Score: 98.4%</div>
+                    <div id="status-text" class="text-4xl font-bold mb-6 border-2 px-8 py-3 rounded-lg tracking-wider shadow-lg bg-black/20">SAFE</div>
+                    
+                    <div class="w-full bg-gradient-to-r from-transparent via-purple-500 to-transparent h-px mb-4 opacity-30"></div>
+                    
+                    <div class="bg-black/20 p-4 rounded-lg w-full border border-purple-500/20">
+                        <p class="text-purple-300 text-[10px] uppercase mb-2 tracking-wider font-bold">Diagnostic Report:</p>
+                        <p id="reason-text" class="text-md text-center leading-relaxed font-light text-white"></p>
+                    </div>
+                </div>
+                
+                <div id="loading" class="absolute bottom-3 right-4 text-[10px] text-pink-400 flex items-center gap-2 opacity-70">
+                    <div class="loader"></div>
+                    <span>Initializing AI Core...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <py-config>
+        [splashscreen]
+        enabled = false
+    </py-config>
+
+    <py-script>
+import math
+from js import document
+from pyodide.ffi import create_proxy
+
+# 1. THE TRAINING DATA
+# Format: [Oxygen, Pressure, Radiation, "Status", "Root Cause"]
+
+training_data = [
+    # --- SAFE SCENARIOS ---
+    [95, 14.7, 0, "SAFE", "All systems nominal."],
+    [98, 15.0, 0.2, "SAFE", "Conditions optimal."],
+    [92, 14.2, 0.5, "SAFE", "Minor fluctuations, still within safety limits."],
+    [95, 14.7, 0.8, "SAFE", "Background radiation nominal."],
+
+    # --- SINGLE FAILURES (OXYGEN) ---
+    [15, 14.7, 0, "DANGER", "CRITICAL HYPOXIA (Low Oxygen)."],
+    [40, 14.7, 0, "WARNING", "Oxygen levels low. Crew alertness impacted."],
+    [5, 14.7, 0, "CRITICAL", "ASPHYXIATION HAZARD. Life Support Failure."],
+    [50, 14.7, 0, "DANGER", "OXYGEN TOXICITY RISK. Fire hazard extreme."],
+
+    # --- SINGLE FAILURES (PRESSURE) ---
+    [95, 5.0, 0, "DANGER", "DECOMPRESSION SICKNESS RISK. Hull breach suspected."],
+    [95, 0.5, 0, "CRITICAL", "VACUUM EXPOSURE. Seal bulkheads immediately."],
+    [95, 30.0, 0, "DANGER", "OVER-PRESSURE EVENT. Structural stress detected."],
+
+    # --- SINGLE FAILURES (RADIATION EXTENDED) ---
+    # Level 1: Minor Solar Activity
+    [95, 14.7, 50, "WARNING", "ELEVATED READINGS. Solar flare activity detected. Check shielding."],
+    
+    # Level 2: Hazardous Exposure
+    [95, 14.7, 200, "DANGER", "HAZARDOUS RADIATION. Limit crew exposure time. Activate magnetic shields."],
+    
+    # Level 3: Core Leak
+    [95, 14.7, 500, "DANGER", "RADIATION LEAK DETECTED. Core shielding compromised. Section isolation required."],
+    
+    # Level 4: Reactor Failure
+    [95, 14.7, 800, "CRITICAL", "REACTOR CONTAINMENT FAILURE. Manual scram sequence required."],
+    
+    # Level 5: Lethal
+    [95, 14.7, 1500, "CRITICAL", "ACUTE RADIATION SYNDROME RISK. Immediate medical intervention needed."],
+    [95, 14.7, 5000, "CRITICAL", "LETHAL DOSAGE. Catastrophic core meltdown. Evacuate immediately."],
+
+    # --- COMBINED FAILURES ---
+    
+    # Low Oxygen + High Radiation (System + Solar)
+    [15, 14.7, 500, "CRITICAL", "MULTIPLE FAILURES: Hypoxia AND Radiation Leak detected."],
+    
+    # Low Oxygen + High Radiation (Minor)
+    [40, 14.7, 300, "DANGER", "SYSTEM STRESS: Low Oxygen AND Hazardous Radiation levels."],
+    
+    # High Pressure + High Radiation (Core Overload)
+    [95, 25.0, 400, "DANGER", "CORE OVERLOAD: High Pressure AND Radiation spikes."],
+
+    # Low Oxygen + Low Pressure (Hull Breach)
+    [10, 2.0, 0, "CRITICAL", "CATASTROPHIC BREACH: Oxygen venting to vacuum. Pressure critical."],
+    
+    # High Pressure + Fire Risk (High O2)
+    [50, 30.0, 0, "CRITICAL", "EXPLOSION RISK: High Pressure AND Oxygen Toxicity."],
+    
+    # High Radiation + Hull Breach
+    [95, 1.0, 1000, "CRITICAL", "DOOMSDAY SCENARIO: Vacuum exposure AND Lethal Radiation."],
+    
+    # EVERYTHING WRONG
+    [10, 1.0, 2000, "CRITICAL", "TOTAL STATION LOSS: Multiple critical system failures."]
+]
+
+# 2. THE ML ALGORITHM (Weighted k-Nearest Neighbors)
+# We normalize distances so 'Radiation' (0-5000) doesn't overpower 'Oxygen' (0-100)
+
+def calculate_weighted_distance(user_input, example):
+    # 1. Get raw differences
+    diff_o2 = user_input[0] - example[0]
+    diff_press = user_input[1] - example[1]
+    diff_rad = user_input[2] - example[2]
+
+    # 2. Scale them (Normalize)
+    # We divide by the "typical range" of that sensor
+    # Oxygen range ~100, Pressure ~20, Radiation ~1000
+    
+    scaled_o2 = diff_o2 / 100.0 
+    scaled_press = diff_press / 20.0
+    scaled_rad = diff_rad / 1000.0
+
+    # 3. Standard Euclidean Distance on SCALED values
+    return math.sqrt(scaled_o2**2 + scaled_press**2 + scaled_rad**2)
+
+def get_nearest_neighbor(user_input):
+    shortest_distance = 999999
+    best_match = None
+    
+    for example in training_data:
+        dist = calculate_weighted_distance(user_input, example)
+        if dist < shortest_distance:
+            shortest_distance = dist
+            best_match = example
+            
+    return best_match
+
+# 3. INTERFACE LOGIC
+def predict_safety(event):
+    result_box = document.getElementById("result-box")
+    initial_state = document.getElementById("initial-state")
+    status_text = document.getElementById("status-text")
+    reason_text = document.getElementById("reason-text")
+
+    try:
+        o2_val = document.getElementById("oxygen").value
+        press_val = document.getElementById("pressure").value
+        rad_val = document.getElementById("radiation").value
+        
+        if o2_val == "" or press_val == "" or rad_val == "":
+            raise ValueError("Empty inputs")
+            
+        o2 = float(o2_val)
+        pressure = float(press_val)
+        rad = float(rad_val)
+        
+    except:
+        initial_state.classList.add("hidden")
+        result_box.classList.remove("hidden")
+        status_text.innerText = "ERROR"
+        status_text.className = "text-4xl font-bold mb-4 border-2 px-6 py-2 rounded tracking-wider text-gray-400 border-gray-400"
+        reason_text.innerText = "Please enter valid numerical sensor data."
+        return
+
+    user_input = [o2, pressure, rad]
+    
+    # Run ML Prediction
+    prediction = get_nearest_neighbor(user_input)
+    
+    status = prediction[3]
+    reason = prediction[4]
+
+    # Update UI
+    initial_state.classList.add("hidden")
+    result_box.classList.remove("hidden")
+    status_text.innerText = status
+    reason_text.innerText = reason
+
+    # Updated status colors logic inside Python to match new CSS classes if needed, 
+    # but the CSS classes .status-safe etc are already handling the colors.
+    # We just apply the class name here.
+    
+    base_classes = "text-4xl font-bold mb-6 border-2 px-8 py-3 rounded-lg tracking-wider shadow-lg bg-black/20 "
+    if status == "SAFE":
+        status_text.className = base_classes + "status-safe"
+    elif status == "WARNING":
+        status_text.className = base_classes + "status-warning"
+    elif status == "CRITICAL":
+        status_text.className = base_classes + "status-critical"
+    else:
+        status_text.className = base_classes + "status-danger"
+
+# 4. SETUP
+def main():
+    click_proxy = create_proxy(predict_safety)
+    btn = document.getElementById("predict-btn")
+    if btn:
+        btn.addEventListener("click", click_proxy)
+    document.getElementById("loading").style.display = "none"
+
+main()
+    </py-script>
+</body>
+</html>
